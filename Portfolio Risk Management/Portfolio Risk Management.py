@@ -241,3 +241,126 @@ PortfolioReturns_fit = PortfolioReturns_model.fit()
 regression_adj_rsq = PortfolioReturns_fit.rsquared_adj
 print(regression_adj_rsq)
 
+# Extract the p-value of the SMB factor
+smb_pval = PortfolioReturns_fit.pvalues['SMB']
+
+# If the p-value is significant, print significant
+if smb_pval > 0.05:
+    significant_msg = 'significant'
+else:
+    significant_msg = 'not significant'
+
+# Print the SMB coefficient
+smb_coeff = PortfolioReturns_fit.params['SMB']
+print("The SMB coefficient is ", smb_coeff, " and is ", significant_msg)
+
+# Calculate your portfolio alpha
+portfolio_alpha = PortfolioReturns_fit.params['Intercept']
+print(portfolio_alpha)
+
+# Annualize your portfolio alpha
+portfolio_alpha_annualized = ((1+portfolio_alpha)**252)-1
+print(portfolio_alpha_annualized)
+
+
+###############################################################################
+
+'''5 - Factor Model 
+Market returns
+SMB - Small minus Big - capex based 
+HML - High minus Low - Value vs Growth stocks
+RMW - Profitability
+CMA - investment
+'''
+
+# Define the regression formula
+PortfolioReturns_model = smf.ols(formula='Portfolio_Excess ~ Market_Excess + SMB + HML + RMW + CMA', data=PortfolioReturns)
+
+# Fit the regression
+PortfolioReturns_fit = PortfolioReturns_model.fit()
+
+# Extract the adjusted r-squared
+regression_adj_rsq = PortfolioReturns_fit.rsquared_adj
+print(regression_adj_rsq)
+
+################################################################################
+'''Tail risk'''
+
+'''Tail risk is the risk of extreme investment outcomes, most notably on the negative side of a distribution.
+Historical Draw down
+Value at risk
+Conditional value at risk
+Monte carlo simulation'''
+
+################################################################################
+'''Random walk Simulation and Monte Carlo Simulations'''
+
+# Set the simulation parameters
+mu = 0
+vol = 0.021
+T = 252
+S0 = 10
+
+# Add one to the random returns
+rand_rets = np.random.normal(mu,vol,T) + 1
+
+# Forecasted random walk
+forecasted_values = S0*rand_rets.cumprod()
+
+# Plot the random walk
+plt.plot(range(0, T), forecasted_values)
+plt.show()
+
+# Loop through 100 simulations
+for i in range(0,100):
+
+    # Generate the random returns
+    rand_rets = np.random.normal(mu, vol, T) + 1
+    
+    # Create the Monte carlo path
+    forecasted_values = S0*(rand_rets).cumprod()
+    
+    # Plot the Monte Carlo path
+    plt.plot(range(T), forecasted_values)
+    
+plt.show()
+
+### VaR calculation using monte carlo simulation
+
+# Aggregate the returns
+sim_returns = []
+
+# Loop through 100 simulations
+for i in range(100):
+
+    # Generate the Random Walk
+    rand_rets = np.random.normal(mu, vol, T)
+    
+    # Save the results
+    sim_returns.append(rand_rets)
+
+# Calculate the VaR(99)
+var_99 = np.percentile(sim_returns,1)
+print("Parametric VaR(99): ", round(100*var_99, 2),"%")
+
+'''Value at Risk, or VaR, is a threshold with a given confidence level that losses 
+will not (or more accurately, will not historically) exceed a certain level.
+
+In the worst 1% of cases, losses were on average exceed -4.91% historically.'''
+
+sim_returns = pd.Series(sim_returns)
+# Historical CVaR 95
+cvar_99 = sim_returns[sim_returns <= var_99].mean()
+print(cvar_99)
+print("Parametric CVaR(99):(99): ", round(100*cvar_99, 2),"%")
+
+# Plot the probability of each return quantile
+plt.hist(sorted_rets, normed=True)
+
+# Denote the VaR 95 and CVaR 95 quantiles
+plt.axvline(x=var_95, color="r", linestyle="-", label='VaR 95: {0:.2f}%'.format(var_95))
+plt.axvline(x=cvar_95, color='b', linestyle='-', label='CVaR 95: {0:.2f}%'.format(cvar_95))
+plt.show()
+
+
+
