@@ -74,4 +74,116 @@ print("Shapiro results:", shapiro_results)
 p_value = shapiro_results[1]
 print("P-value: ", p_value)
 
+###############################################################################
+'''Portfolio Composition'''
+
+StockReturns = pd.read_csv("C:\\Users\\Lenovo\\Desktop\\ML\\Finance-Assignment\\Portfolio Risk Management\\data\\Big9Returns2017.csv", parse_dates=['Date'])
+
+# Finish defining the portfolio weights as a numpy array
+portfolio_weights = np.array([0.12, 0.15, 0.08, 0.05, 0.09, 0.10, 0.11, 0.14, 0.16])
+
+StockReturns.index = pd.to_datetime(StockReturns['Date'])
+StockReturns = StockReturns.drop(['Date'],axis=1)
+
+# Calculate the weighted stock returns
+WeightedReturns = StockReturns.mul(portfolio_weights, axis=1)
+
+# Calculate the portfolio returns
+StockReturns['Portfolio'] = WeightedReturns.sum(axis=1)
+
+# Plot the cumulative portfolio returns over time
+CumulativeReturns = ((1+StockReturns["Portfolio"]).cumprod()-1)
+CumulativeReturns.plot()
+plt.show()
+
+# How many stocks are in your portfolio?
+numstocks = 9
+
+# Create an array of equal weights across all assets
+portfolio_weights_ew = np.repeat(1/9,numstocks)
+
+# Calculate the equally-weighted portfolio returns
+StockReturns['Portfolio_EW'] = StockReturns.iloc[:,0:9].mul(portfolio_weights_ew, axis=1).sum(axis=1)
+
+# Create an array of market capitalizations (in billions)
+market_capitalizations = np.array([601.51, 469.25, 349.5, 310.48, 299.77, 356.94, 268.88, 331.57, 246.09])
+
+# Calculate the market cap weights
+mcap_weights = market_capitalizations/sum(market_capitalizations)
+
+# Calculate the market cap weighted portfolio returns
+StockReturns['Portfolio_MCap'] = StockReturns.iloc[:, 0:9].mul(mcap_weights, axis=1).sum(axis=1)
+
+StockReturns = StockReturns.drop(['Portfolio','Portfolio_MCap'],axis=1)
+correlation_matrix = StockReturns.cov()
+cov_mat_annual = correlation_matrix*252
+
+# Import seaborn as sns
+import seaborn as sns
+
+# Create a heatmap
+sns.heatmap(correlation_matrix,
+            annot=True,
+            cmap="YlGnBu", 
+            linewidths=0.3,
+            annot_kws={"size": 8})
+
+# Plot aesthetics
+plt.xticks(rotation=90)
+plt.yticks(rotation=0) 
+plt.show()
+
+# Calculate the portfolio standard deviation
+portfolio_volatility = np.sqrt(np.dot(portfolio_weights.T, np.dot(cov_mat_annual, portfolio_weights)))
+print(portfolio_volatility)
+
+##############################################################################
+'''Markowitz portfolio'''
+
+RandomReturns = pd.read_csv("C:\\Users\\Lenovo\\Desktop\\ML\\Finance-Assignment\\Portfolio Risk Management\\data\\EfficientFrontierPortfoliosSlim.csv")
+
+# Risk free rate
+risk_free = 0
+
+# Calculate the Sharpe Ratio for each asset
+RandomReturns['Sharpe'] = (RandomReturns['Returns'] - risk_free )/ RandomReturns['Volatility']
+
+# Print the range of Sharpe ratios
+print(RandomReturns['Sharpe'].describe()[['min', 'max']])
+
+# Sort the portfolios by Sharpe ratio
+sorted_portfolios = RandomReturns.sort_values(by=['Sharpe'], ascending=False)
+
+'''Maximum sharpie ratio'''
+
+# Extract the corresponding weights
+MSR_weights = sorted_portfolios.iloc[0, 0:numstocks]
+
+# Cast the MSR weights as a numpy array
+MSR_weights_array = np.array(MSR_weights)
+
+# Calculate the MSR portfolio returns
+StockReturns['Portfolio_MSR'] = StockReturns.iloc[:, 0:numstocks].mul(MSR_weights_array, axis=1).sum(axis=1)
+
+'''Global Minimum Volatility'''
+
+# Sort the portfolios by volatility
+sorted_portfolios = RandomReturns.sort_values(by=['Volatility'], ascending=True)
+
+# Extract the corresponding weights
+GMV_weights = sorted_portfolios.iloc[0, 0:numstocks]
+
+# Cast the GMV weights as a numpy array
+GMV_weights_array = np.array(GMV_weights)
+
+# Calculate the GMV portfolio returns
+StockReturns['Portfolio_GMV'] = StockReturns.iloc[:, 0:numstocks].mul(GMV_weights_array, axis=1).sum(axis=1)
+
+###############################################################################
+
+'''CAPM Model'''
+
+
+
+
 
