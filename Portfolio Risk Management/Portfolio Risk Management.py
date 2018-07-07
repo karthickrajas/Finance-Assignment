@@ -181,9 +181,63 @@ StockReturns['Portfolio_GMV'] = StockReturns.iloc[:, 0:numstocks].mul(GMV_weight
 
 ###############################################################################
 
-'''CAPM Model'''
+'''CAPM Model to determine beta'''
 
+PortfolioReturns = pd.read_csv("C:\\Users\\Lenovo\\Desktop\\ML\\Finance-Assignment\\Portfolio Risk Management\\data\\FamaFrenchFactors.csv")
 
+# Risk free rate
+risk_free = 0
 
+# Calculate excess portfolio returns
+PortfolioReturns['Portfolio_Excess'] = PortfolioReturns['Portfolio'] - PortfolioReturns['RF']
 
+# Calculate the co-variance matrix between Portfolio_Excess and Market_Excess
+covariance_matrix = PortfolioReturns[['Portfolio_Excess', 'Market_Excess']].cov()
+
+# Extract the co-variance co-efficient
+covariance_coefficient = covariance_matrix.iloc[0, 1]
+print(covariance_coefficient)
+
+# Calculate the benchmark variance
+benchmark_variance = PortfolioReturns['Market_Excess'].var()
+print(benchmark_variance)
+
+# Calculating the portfolio market beta
+portfolio_beta = covariance_coefficient/benchmark_variance
+print(portfolio_beta)
+
+# Import statsmodels.formula.api
+import statsmodels.formula.api as smf 
+
+# Define the regression formula
+CAPM_model = smf.ols(formula='Portfolio_Excess ~ Market_Excess', data=PortfolioReturns)
+
+# Fit the regression and print adjusted r-squared
+CAPM_fit = CAPM_model.fit()
+print(CAPM_fit.rsquared_adj)
+
+# Extract the beta
+regression_beta = CAPM_fit.params[1]
+print(regression_beta)
+
+###############################################################################
+
+'''Alpha and multifactor models'''
+
+#Explains the variance better
+#More risk more reward., going for smaller stocks instead of premium stocks
+
+#Alpha is the error time + alpha - scale returns
+# - alpha - weighter returns 
+#alpha - missing components in the model
+
+# Define the regression formula
+PortfolioReturns_model = smf.ols(formula='Portfolio_Excess ~ Market_Excess + SMB + HML', data=PortfolioReturns)
+
+# Fit the regression
+PortfolioReturns_fit = PortfolioReturns_model.fit()
+
+# Extract the adjusted r-squared
+regression_adj_rsq = PortfolioReturns_fit.rsquared_adj
+print(regression_adj_rsq)
 
